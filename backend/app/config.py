@@ -1,3 +1,4 @@
+
 """
 Configuration module for Fake Productivity Detector Backend.
 
@@ -54,7 +55,7 @@ class Settings(BaseSettings):
     
     # CORS Settings  (stored as a comma-separated string in .env)
     cors_origins_str: str = Field(
-        default="http://localhost:5173,http://localhost:3000,http://localhost:8080",
+        default="http://localhost:5173,http://localhost:3000,http://localhost:8080,https://fake-productivity-detector-gi977vlhp-chirag367-codes-projects.vercel.app,https://fake-productivity-detector.vercel.app",
         alias="CORS_ORIGINS",
         description="Comma-separated list of allowed CORS origins"
     )

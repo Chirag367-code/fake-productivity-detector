@@ -8,8 +8,10 @@
 import { supabase } from "../../lib/supabase";
 
 // Backend API base URL
+// In production (Vercel), API is served on the same domain via /api/ rewrites.
+// In development, set VITE_API_URL or it defaults to localhost:8000.
 export const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:8000";
+  import.meta.env.VITE_API_URL || "";
 
 // API endpoints
 export const API_ENDPOINTS = {

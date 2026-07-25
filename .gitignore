@@ -68,3 +68,4 @@ temp/
 
 # Uploaded CSV files (user data)
 uploads/
+.vercel
