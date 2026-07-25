@@ -1,0 +1,37 @@
+name: Train ML Model
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [ main, master ]
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Run training (generate real model)
+        working-directory: backend
+        run: |
+          python -m app.ml.train_model --samples 5000 --output-dir ../models
+
+      - name: Upload model artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: trained-model
+          path: |
+            models/*.joblib
+            backend/models/*.joblib

@@ -1,0 +1,32 @@
+{
+  "name": "fake-productivity-detector",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.98.0",
+    "lucide-react": "0.487.0",
+    "motion": "12.23.24",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "recharts": "2.15.2",
+    "tw-animate-css": "1.3.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.1.12",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "4.7.0",
+    "tailwindcss": "4.1.12",
+    "typescript": "^5.4.0",
+    "vite": "6.3.5"
+  },
+  "allowScripts": {
+    "@tailwindcss/oxide@4.1.12": true,
+    "esbuild@0.25.12": true
+  }
+}
