@@ -8,10 +8,10 @@ A modern, comprehensive web application that analyzes productivity data using da
 ![React](https://img.shields.io/badge/React-18-61dafb)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6)
 ![Tailwind](https://img.shields.io/badge/Tailwind-4-38bdf8)
-![GitHub stars](https://img.shields.io/github/stars/meet21122005/-Fake-Productivity-Detector-Using-Data-Science-?style=social)
-![GitHub forks](https://img.shields.io/github/forks/meet21122005/-Fake-Productivity-Detector-Using-Data-Science-?style=social)
-![GitHub issues](https://img.shields.io/github/issues/meet21122005/-Fake-Productivity-Detector-Using-Data-Science-)
-![License](https://img.shields.io/github/license/meet21122005/-Fake-Productivity-Detector-Using-Data-Science-)
+![GitHub stars](https://img.shields.io/github/stars/Chirag367-code/-Fake-Productivity-Detector-Using-Data-Science-?style=social)
+![GitHub forks](https://img.shields.io/github/forks/Chirag367-code/-Fake-Productivity-Detector-Using-Data-Science-?style=social)
+![GitHub issues](https://img.shields.io/github/issues/Chirag367-code/-Fake-Productivity-Detector-Using-Data-Science-)
+![License](https://img.shields.io/github/license/Chirag367-code/-Fake-Productivity-Detector-Using-Data-Science-)
 
 ---
 
@@ -153,7 +153,7 @@ Git
 ### Git Setup
 ```bash
 # Clone the repository
-git clone https://github.com/meet21122005/-Fake-Productivity-Detector-Using-Data-Science-.git
+git clone https://github.com/Chirag367-code/-Fake-Productivity-Detector-Using-Data-Science-.git
 cd -Fake-Productivity-Detector-Using-Data-Science-
 
 # Create and switch to development branch (recommended)
@@ -164,7 +164,7 @@ git pull origin development
 # Replace 'yourusername' with your GitHub username
 git clone https://github.com/yourusername/-Fake-Productivity-Detector-Using-Data-Science-.git
 cd -Fake-Productivity-Detector-Using-Data-Science-
-git remote add upstream https://github.com/meet21122005/-Fake-Productivity-Detector-Using-Data-Science-.git
+git remote add upstream https://github.com/Chirag367-code/-Fake-Productivity-Detector-Using-Data-Science-.git
 ```
 
 ### Quick Setup (Recommended)
@@ -178,7 +178,7 @@ setup.bat     # Windows
 ### Manual Installation
 ```bash
 # Clone the repository
-git clone https://github.com/meet21122005/-Fake-Productivity-Detector-Using-Data-Science-.git
+git clone https://github.com/Chirag367-code/-Fake-Productivity-Detector-Using-Data-Science-.git
 cd -Fake-Productivity-Detector-Using-Data-Science-
 
 # Install frontend dependencies
@@ -514,7 +514,7 @@ This project is for academic purposes. See [LICENSE](LICENSE) file for details.
 
 ## 👨‍💻 Author
 
-**Meet** — [@meet21122005](https://github.com/meet21122005)
+**Chirag Chavan** — [@Chirag367-code](https://github.com/Chirag367-code)
 - Academic project demonstrating Data Science & Full-Stack Web Development
 
 ---
@@ -536,8 +536,8 @@ This project is for academic purposes. See [LICENSE](LICENSE) file for details.
 ## 💬 Support
 
 For questions or issues:
-- � Issues: [GitHub Issues](https://github.com/meet21122005/-Fake-Productivity-Detector-Using-Data-Science-/issues)
-- 🐙 GitHub: [@meet21122005](https://github.com/meet21122005)
+- 🐛 Issues: [GitHub Issues](https://github.com/Chirag367-code/-Fake-Productivity-Detector-Using-Data-Science-/issues)
+- 🐙 GitHub: [@Chirag367-code](https://github.com/Chirag367-code)
 
 ---
 
