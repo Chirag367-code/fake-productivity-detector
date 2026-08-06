@@ -27,7 +27,7 @@ if __package__ is None:
         sys.path.insert(0, backend_dir)
 
 from app.config import settings
-from app.routes import analysis, csv_upload, history, reports
+from app.routes import analysis, csv_upload, history, reports, agent
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -240,6 +240,11 @@ app.include_router(
 
 app.include_router(
     reports.router,
+    prefix="/api/v1"
+)
+
+app.include_router(
+    agent.router,
     prefix="/api/v1"
 )
 

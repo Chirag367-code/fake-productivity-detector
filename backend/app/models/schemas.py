@@ -5,7 +5,7 @@ This module defines all the data models used for API request validation
 and response serialization in the Fake Productivity Detector backend.
 """
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 from enum import Enum
@@ -279,6 +279,83 @@ class HealthResponse(BaseModel):
     timestamp: str
     database: str
     ml_model: str
+
+
+# ==================== Agent Schemas ====================
+
+class AgentSyncRequest(BaseModel):
+    """
+    Schema for agent sync request from the local behavioral agent.
+
+    Contains ONLY aggregated summary data — never raw events.
+    """
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "user_id": "user-uuid",
+                "date": "2026-07-28",
+                "authenticity_score": 78.5,
+                "category": "Moderately Productive",
+                "summary_stats": {
+                    "avg_typing_speed": 145.2,
+                    "typing_rhythm_variance": 62.1,
+                    "pause_ratio": 0.15,
+                    "mouse_velocity_mean": 320.5,
+                    "mouse_velocity_std": 180.3,
+                    "mouse_direction_change_freq": 12.4,
+                    "total_keystrokes": 8500,
+                    "total_mouse_events": 3200,
+                    "total_active_seconds": 25200.0,
+                    "top_window_categories": [
+                        {"category": "Code/IDE", "seconds": 14400.0},
+                        {"category": "Browser", "seconds": 7200.0}
+                    ],
+                    "breakdown": {
+                        "typing_variance_score": 68.95,
+                        "typing_speed_score": 85.0,
+                        "pause_score": 85.0,
+                        "mouse_naturalness_score": 70.0,
+                        "window_quality_score": 75.0,
+                        "activity_volume_score": 80.0
+                    }
+                }
+            }
+        }
+    )
+
+    user_id: str = Field(..., min_length=1, description="User identifier (UUID)")
+    event_date: date = Field(..., description="Date of the recorded data (ISO format)")
+    authenticity_score: float = Field(
+        ..., ge=0, le=100, description="Calculated authenticity score (0-100)"
+    )
+    category: str = Field(
+        default="Moderately Productive",
+        description="Productivity category matching ProductivityCategory enum"
+    )
+    summary_stats: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Aggregated summary statistics (never raw events)"
+    )
+
+
+class AgentSyncResponse(BaseModel):
+    """
+    Response schema for agent sync endpoint.
+    """
+    id: Optional[str] = Field(None, description="Record ID")
+    user_id: str = Field(..., description="User identifier")
+    event_date: str = Field(..., description="Date of the recorded data")
+    authenticity_score: float = Field(..., ge=0, le=100)
+    message: str = Field(default="Authenticity data synced successfully")
+
+
+class AgentHistoryResponse(BaseModel):
+    """
+    Schema for agent authenticity history response.
+    """
+    user_id: str
+    total_records: int
+    history: List[Dict[str, Any]]
 
 
 # Forward reference update

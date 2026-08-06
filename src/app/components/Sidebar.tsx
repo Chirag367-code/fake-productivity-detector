@@ -1,18 +1,19 @@
 import { motion, AnimatePresence } from "motion/react";
-import { 
-  LayoutDashboard, 
-  Upload, 
-  Activity, 
-  FileText, 
-  History, 
-  User, 
+import {
+  LayoutDashboard,
+  Upload,
+  Activity,
+  FileText,
+  History,
+  User,
   LogOut,
   Menu,
-  X
+  X,
+  Monitor
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
-export type PageType = "dashboard" | "upload" | "manual" | "reports" | "history" | "profile";
+export type PageType = "dashboard" | "upload" | "manual" | "reports" | "history" | "profile" | "agent";
 
 interface SidebarProps {
   currentPage: PageType;
@@ -38,6 +39,7 @@ export function Sidebar({ currentPage, onPageChange, onLogout, userName, userPho
     { id: "dashboard" as PageType, label: "Dashboard", icon: LayoutDashboard },
     { id: "upload" as PageType, label: "Upload CSV", icon: Upload },
     { id: "manual" as PageType, label: "Manual Analysis", icon: Activity },
+    { id: "agent" as PageType, label: "Agent Monitor", icon: Monitor },
     { id: "reports" as PageType, label: "Reports", icon: FileText },
     { id: "history" as PageType, label: "History", icon: History },
     { id: "profile" as PageType, label: "Profile", icon: User },
@@ -66,9 +68,8 @@ export function Sidebar({ currentPage, onPageChange, onLogout, userName, userPho
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -300, opacity: 0 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className={`fixed left-0 top-0 h-screen backdrop-blur-lg bg-white/70 border-r border-white/50 shadow-2xl z-40 ${
-              isCollapsed ? "w-20" : "w-72"
-            } transition-all duration-300`}
+            className={`fixed left-0 top-0 h-screen backdrop-blur-lg bg-white/70 border-r border-white/50 shadow-2xl z-40 ${isCollapsed ? "w-20" : "w-72"
+              } transition-all duration-300`}
           >
             <div className="flex flex-col h-full p-4">
               {/* Logo & Toggle */}
@@ -100,17 +101,15 @@ export function Sidebar({ currentPage, onPageChange, onLogout, userName, userPho
 
               {/* User Profile */}
               <motion.div
-                className={`mb-6 p-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl ${
-                  isCollapsed ? "px-2" : ""
-                }`}
+                className={`mb-6 p-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl ${isCollapsed ? "px-2" : ""
+                  }`}
               >
                 <div className={`flex items-center gap-3 ${isCollapsed ? "justify-center" : ""}`}>
                   <img
                     src={userPhoto}
                     alt={userName}
-                    className={`rounded-full border-2 border-white shadow-md ${
-                      isCollapsed ? "w-10 h-10" : "w-12 h-12"
-                    }`}
+                    className={`rounded-full border-2 border-white shadow-md ${isCollapsed ? "w-10 h-10" : "w-12 h-12"
+                      }`}
                   />
                   {!isCollapsed && (
                     <motion.div
@@ -138,11 +137,10 @@ export function Sidebar({ currentPage, onPageChange, onLogout, userName, userPho
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05 }}
                       onClick={() => handlePageChange(item.id)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
-                        isActive
-                          ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg"
-                          : "hover:bg-white/50 text-gray-700"
-                      } ${isCollapsed ? "justify-center px-2" : ""}`}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${isActive
+                        ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg"
+                        : "hover:bg-white/50 text-gray-700"
+                        } ${isCollapsed ? "justify-center px-2" : ""}`}
                     >
                       <Icon className={`${isCollapsed ? "w-6 h-6" : "w-5 h-5"} ${isActive ? "animate-pulse" : ""}`} />
                       {!isCollapsed && (
@@ -162,9 +160,8 @@ export function Sidebar({ currentPage, onPageChange, onLogout, userName, userPho
               {/* Logout Button */}
               <motion.button
                 onClick={onLogout}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-all duration-300 shadow-md hover:shadow-lg ${
-                  isCollapsed ? "justify-center px-2" : ""
-                }`}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-all duration-300 shadow-md hover:shadow-lg ${isCollapsed ? "justify-center px-2" : ""
+                  }`}
               >
                 <LogOut className={`${isCollapsed ? "w-6 h-6" : "w-5 h-5"}`} />
                 {!isCollapsed && <span className="text-sm font-medium">Logout</span>}

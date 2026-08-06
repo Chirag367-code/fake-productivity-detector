@@ -8,11 +8,32 @@ import { ManualAnalysisPage } from "./components/pages/ManualAnalysisPage";
 import { ReportsPage } from "./components/pages/ReportsPage";
 import { HistoryPage } from "./components/pages/HistoryPage";
 import { ProfilePage } from "./components/pages/ProfilePage";
+import { AgentMonitoringPage } from "./components/pages/AgentMonitoringPage";
 import { Loader2 } from "lucide-react";
+
+const PAGE_STORAGE_KEY = "fpd_current_page";
+
+const VALID_PAGES: PageType[] = [
+  "dashboard",
+  "upload",
+  "manual",
+  "reports",
+  "history",
+  "profile",
+  "agent",
+];
+
+function getInitialPage(): PageType {
+  const saved = sessionStorage.getItem(PAGE_STORAGE_KEY);
+  if (saved && (VALID_PAGES as string[]).includes(saved)) {
+    return saved as PageType;
+  }
+  return "dashboard";
+}
 
 function AppContent() {
   const { user, loading, signOut } = useAuth();
-  const [currentPage, setCurrentPage] = useState<PageType>("dashboard");
+  const [currentPage, setCurrentPage] = useState<PageType>(getInitialPage);
 
   // Show loading spinner while session is being restored
   if (loading) {
@@ -30,11 +51,13 @@ function AppContent() {
 
   const handleLogout = async () => {
     await signOut();
+    sessionStorage.removeItem(PAGE_STORAGE_KEY);
     setCurrentPage("dashboard");
   };
 
   const handlePageChange = (page: PageType) => {
     setCurrentPage(page);
+    sessionStorage.setItem(PAGE_STORAGE_KEY, page);
   };
 
   // Map auth user to the shape components expect
@@ -65,6 +88,7 @@ function AppContent() {
         {currentPage === "manual" && <ManualAnalysisPage userId={user.id} userName={user.name} />}
         {currentPage === "reports" && <ReportsPage userId={user.id} />}
         {currentPage === "history" && <HistoryPage userId={user.id} />}
+        {currentPage === "agent" && <AgentMonitoringPage userId={user.id} />}
         {currentPage === "profile" && <ProfilePage user={userData} />}
       </div>
 

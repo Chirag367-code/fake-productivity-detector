@@ -40,6 +40,19 @@ export const API_ENDPOINTS = {
   csvTemplate: `${API_BASE_URL}/api/v1/upload-csv/template`,
   validateCsv: `${API_BASE_URL}/api/v1/upload-csv/validate`,
 
+  // Agent
+  agentSync: `${API_BASE_URL}/api/v1/agent/sync`,
+  agentHistory: (userId: string) =>
+    `${API_BASE_URL}/api/v1/agent/history/${userId}`,
+  agentScan: (userId: string) =>
+    `${API_BASE_URL}/api/v1/agent/scan/${userId}`,
+  agentLatest: (userId: string) =>
+    `${API_BASE_URL}/api/v1/agent/latest/${userId}`,
+  agentStatus: (userId: string) =>
+    `${API_BASE_URL}/api/v1/agent/status/${userId}`,
+  agentSeed: (userId: string) =>
+    `${API_BASE_URL}/api/v1/agent/seed-demo?user_id=${userId}`,
+
   // Health
   health: `${API_BASE_URL}/health`,
   info: `${API_BASE_URL}/info`,
