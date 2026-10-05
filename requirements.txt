@@ -1,0 +1,32 @@
+# Fake Productivity Detector - Backend Dependencies
+# Python 3.11 required
+
+# Web Framework
+fastapi==0.109.2
+uvicorn[standard]==0.27.1
+python-multipart==0.0.9
+
+# Data Validation
+pydantic==2.6.1
+pydantic-settings==2.2.1
+
+# Database
+supabase==2.13.0
+
+# Data Processing
+pandas==2.2.0
+numpy==1.26.4
+
+# Machine Learning
+scikit-learn==1.4.0
+joblib==1.3.2
+
+# HTTP Client
+httpx==0.26.0
+aiohttp==3.9.3
+
+# Environment
+python-dotenv==1.0.1
+
+# Security
+python-jose[cryptography]==3.3.0
