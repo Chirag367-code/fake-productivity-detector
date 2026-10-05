@@ -2,9 +2,9 @@
 
 > **Academic Project** • Data Science & Web Technologies • Full-Stack Application
 
-A modern web application that analyzes and classifies productivity data using a weighted scoring algorithm with optional Machine Learning classification. Features real Supabase authentication (Google OAuth + email/password), batch CSV processing, interactive Recharts visualizations, and a beautiful glassmorphism UI.
+A modern web application that analyzes and classifies productivity data using a weighted scoring algorithm with optional Machine Learning classification. Features real Supabase authentication (Google OAuth + email/password), batch CSV processing, interactive Recharts visualizations, a local behavioral agent with realistic simulation, and a beautiful glassmorphism UI.
 
-![Version](https://img.shields.io/badge/version-2.0-blue)
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![React](https://img.shields.io/badge/React-18.3-61dafb)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6)
 ![Tailwind](https://img.shields.io/badge/Tailwind-4-38bdf8)
@@ -15,6 +15,54 @@ A modern web application that analyzes and classifies productivity data using a 
 ![GitHub forks](https://img.shields.io/github/forks/Chirag367-code/-Fake-Productivity-Detector-Using-Data-Science-?style=social)
 ![GitHub issues](https://img.shields.io/github/issues/Chirag367-code/-Fake-Productivity-Detector-Using-Data-Science-)
 ![License](https://img.shields.io/github/license/Chirag367-code/-Fake-Productivity-Detector-Using-Data-Science-)
+
+---
+
+## 📐 Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                          CLIENT BROWSER                             │
+│  ┌────────────┐  ┌──────────────┐  ┌──────────────┐  ┌───────────┐ │
+│  │  React 18  │  │ Tailwind CSS │  │   Recharts   │  │  Motion   │ │
+│  │ TypeScript │  │      v4      │  │  Pie/Bar/    │  │ Animations│ │
+│  │   + Vite   │  │ Glassmorphism│  │  Line Charts │  │  & Trans. │ │
+│  └─────┬──────┘  └──────────────┘  └──────────────┘  └───────────┘ │
+│        │   Supabase Auth (Google OAuth + Email/Password)            │
+│        │   authFetch() → Bearer Token on every API call             │
+└────────┼────────────────────────────────────────────────────────────┘
+         │  HTTPS (Vercel Rewrites or Vite Dev Proxy)
+         ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                     FASTAPI BACKEND (Python 3.11)                   │
+│  ┌──────────┐  ┌────────────┐  ┌────────────┐  ┌────────────────┐  │
+│  │ /analyze │  │ /upload-csv│  │  /history   │  │   /reports     │  │
+│  │  Routes  │  │   Routes   │  │   Routes    │  │    Routes      │  │
+│  └────┬─────┘  └─────┬──────┘  └─────┬──────┘  └──────┬─────────┘  │
+│       │              │               │                 │            │
+│  ┌────▼──────────────▼───────────────▼─────────────────▼─────────┐  │
+│  │                    SERVICES LAYER                              │  │
+│  │  ProductivityScorer │ MLClassifier │ SuggestionEngine │ Preproc│  │
+│  └──────────────────────────┬────────────────────────────────────┘  │
+│                             │                                       │
+│  ┌──────────────────────────▼────────────────────────────────────┐  │
+│  │                    AGENT MODULE                                │  │
+│  │  capture.py → feature_extraction.py → authenticity_scorer.py  │  │
+│  │  simulator.py (realistic synthetic telemetry)                 │  │
+│  │  sync_client.py → POST /agent/sync                            │  │
+│  └───────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                     SUPABASE (PostgreSQL + Auth)                    │
+│  ┌───────────┐  ┌──────────────────────┐  ┌─────────────────────┐  │
+│  │   users   │  │ productivity_analysis│  │ agent_authenticity   │  │
+│  │  (RLS)    │  │       (RLS)          │  │    _records (RLS)    │  │
+│  └───────────┘  └──────────────────────┘  └─────────────────────┘  │
+│  Row-Level Security · Trigger-based user sync · Google OAuth       │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -33,6 +81,8 @@ A modern web application that analyzes and classifies productivity data using a 
 - **🔍 Comprehensive Reporting** — Filterable tables with search, sort, and export
 - **❤️ Health Monitoring** — API health checks, auto-healing, and comprehensive logging
 - **🤖 Local Behavioral Agent** — Lightweight desktop background process capturing passive behavioral metadata (keystroke timing, mouse vectors, window titles) for daily authenticity scoring — privacy-first, raw events never leave your machine
+- **🎭 Agent Simulator** — Realistic synthetic telemetry generation with burst/pause keystroke patterns, acceleration/deceleration mouse physics, category-dependent window dwell times, and daily personality profiles for demo and testing
+- **🔄 CI/CD Pipeline** — GitHub Actions workflow for automated ML model training
 
 ### 🎨 User Interface
 - **🪟 Glassmorphism Design** — Modern frosted glass effects with backdrop blur
@@ -54,7 +104,7 @@ A modern web application that analyzes and classifies productivity data using a 
 | ✍️ **Manual Analysis** | `manual` | Single entry form with instant results & export |
 | 📄 **Reports** | `reports` | Filterable table with stats summary & CSV export |
 | 📜 **History** | `history` | Timeline view with trend chart & delete option |
-| 🤖 **Agent Monitor** | `agent` | Behavioral authenticity tracking from local agent |
+| 🤖 **Agent Monitor** | `agent` | Behavioral authenticity tracking with live telemetry, simulator fallback, and demo seeding |
 | 👤 **Profile** | `profile` | User info, total analyses, average & best scores |
 
 ---
@@ -83,7 +133,8 @@ A modern web application that analyzes and classifies productivity data using a 
 | FastAPI | 0.109.2 | Web framework |
 | Uvicorn | 0.27.1 | ASGI server |
 | Pydantic | 2.6.1 | Data validation |
-| Supabase Client | 2.27.3 | Database & Auth |
+| Pydantic-Settings | 2.2.1 | Environment configuration |
+| Supabase Client | 2.13.0 | Database & Auth |
 | Pandas | 2.2.0 | Data processing |
 | NumPy | 1.26.4 | Numerical computing |
 | Scikit-learn | 1.4.0 | ML classification (Random Forest, Logistic Regression, Decision Tree) |
@@ -92,8 +143,15 @@ A modern web application that analyzes and classifies productivity data using a 
 | AIOHTTP | 3.9.3 | Async HTTP client |
 | Python-JOSE | 3.3.0 | JWT handling |
 | Python-Dotenv | 1.0.1 | Environment variables |
-| pynput | 1.7.6 | Keystroke timing & mouse capture (agent) |
-| pywin32 | 306 | Active window title detection (Windows agent) |
+| python-multipart | 0.0.9 | File upload handling |
+
+### Agent (Local Desktop Process)
+
+| Technology | Purpose |
+|------------|---------|
+| pynput | Keystroke timing & mouse capture |
+| pywin32 | Active window title detection (Windows) |
+| SQLite | Local event storage (`~/.fpd-agent/agent_events.db`) |
 
 ### Infrastructure
 
@@ -102,6 +160,7 @@ A modern web application that analyzes and classifies productivity data using a 
 | **Supabase** | PostgreSQL database + Authentication (Google OAuth, email/password) |
 | **Docker** | Containerized backend deployment |
 | **Vercel** | Monorepo deployment (frontend + backend rewrites) |
+| **GitHub Actions** | CI/CD pipeline for automated ML model training |
 
 ---
 
@@ -183,6 +242,58 @@ python -m app.ml.train_model --model logistic_regression --samples 5000
 - Falls back to rule-based scoring if model unavailable
 - Both rule-based and ML categories are returned in API responses
 
+### CI/CD: Automated Model Training
+
+A GitHub Actions workflow (`.github/workflows/train-model.yml`) triggers on pushes to `main`/`master` or manually via `workflow_dispatch`:
+
+```yaml
+# Trains a Random Forest model with 5000 samples and uploads as artifact
+python -m app.ml.train_model --samples 5000 --output-dir ../models
+```
+
+---
+
+## 🕵️ Local Behavioral Agent
+
+The agent is a privacy-first desktop background process that captures passive behavioral metadata to compute a daily "authenticity score" — detecting whether work patterns appear genuinely human or potentially automated/faked.
+
+### How It Works
+
+```
+capture.py (daemon threads)
+    ├── KeystrokeCapture → inter-key timing intervals
+    ├── MouseCapture     → movement vectors, velocity
+    └── WindowCapture    → active window titles
+            │
+            ▼
+feature_extraction.py → aggregate statistical features
+            │
+            ▼
+authenticity_scorer.py → 0-100 authenticity score
+            │
+            ▼
+sync_client.py → POST /api/v1/agent/sync (daily)
+```
+
+### Privacy Guarantees
+
+- **Only metadata** — timing intervals, movement vectors, window titles — never keystrokes content
+- **Raw events stay local** in `~/.fpd-agent/agent_events.db` (SQLite)
+- **Only aggregated summaries** are synced to the backend
+- **Opt-out support** via `--opt-out` flag
+
+### Agent Simulator
+
+When no real agent is running, the backend includes a sophisticated simulator (`simulator.py`, ~900 lines) that generates realistic synthetic telemetry:
+
+- Keystroke timing with burst/pause patterns (5-20 rapid keys → think pause)
+- Mouse movement with acceleration/deceleration phases and micro-corrections
+- Category-dependent window dwell times (productive: 5-25 min)
+- Natural idle gaps every 30-90 minutes simulating breaks
+- Daily personality profiles for realistic day-to-day variation
+
+> 📖 **Full agent setup guide:** [AGENT_SETUP.md](AGENT_SETUP.md)
+
 ---
 
 ## 🚀 Getting Started
@@ -222,7 +333,7 @@ npm run dev
 
 1. Create a new project at [supabase.com](https://supabase.com) (free tier)
 2. Go to **SQL Editor** → **New Query** and paste the contents of `supabase/migration.sql`
-3. Run the query — this creates the `users`, `productivity_records`, and `agent_authenticity_records` tables with RLS policies
+3. Run the query — this creates the `users`, `productivity_records`, `productivity_analysis`, and `agent_authenticity_records` tables with RLS policies
 4. Enable Google OAuth in **Authentication** → **Providers** → **Google** (configure with your Google Cloud Console credentials)
 5. Copy your **Project URL** and **anon public key** from **Settings** → **API** into `.env`
 
@@ -257,17 +368,23 @@ python -m app.main
 ```env
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-VITE_API_URL=http://localhost:8000  # optional, for local development
+VITE_API_URL=                              # leave empty for production (uses relative URLs)
 ```
 
 **Backend** (`backend/.env`):
 ```env
+# Required
 SUPABASE_URL=your_supabase_project_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+SUPABASE_KEY=your_supabase_anon_key
+
+# Optional
+SUPABASE_SERVICE_KEY=your_service_role_key
+SUPABASE_JWT_SECRET=your_jwt_secret
 ENVIRONMENT=development
 DEBUG=true
-CORS_ORIGINS=["http://localhost:5173","http://localhost:8000"]
+API_HOST=0.0.0.0
+API_PORT=8000
+CORS_ORIGINS=http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173
 
 # Optional: Custom scoring weights
 SCORE_TASK_HOURS_WEIGHT=8
@@ -275,6 +392,10 @@ SCORE_TASKS_COMPLETED_WEIGHT=5
 SCORE_IDLE_HOURS_WEIGHT=6
 SCORE_SOCIAL_MEDIA_WEIGHT=7
 SCORE_BREAK_FREQUENCY_WEIGHT=2
+
+# Optional: ML settings
+ML_MODEL_TYPE=random_forest
+LOG_LEVEL=INFO
 ```
 
 ### Build for Production
@@ -335,6 +456,8 @@ Task_Hours,Idle_Hours,Social_Media_Usage,Break_Frequency,Tasks_Completed
 - ✅ Interactive Data Visualizations (Recharts Pie/Bar/Line)
 - ✅ Authentication Flows (Google OAuth, email/password, email confirmation)
 - ✅ Row-Level Security (Supabase RLS policies)
+- ✅ Behavioral Analytics (keystroke/mouse/window capture, authenticity scoring)
+- ✅ CI/CD Automation (GitHub Actions model training pipeline)
 
 ### Easy To Explain:
 
@@ -350,6 +473,7 @@ Task_Hours,Idle_Hours,Social_Media_Usage,Break_Frequency,Tasks_Completed
 Fake-Productivity-Detector/
 ├── src/
 │   ├── main.tsx                          # React entry point
+│   ├── vite-env.d.ts                    # Vite type declarations
 │   │
 │   ├── app/
 │   │   ├── App.tsx                       # Root component, routing, auth guard
@@ -385,7 +509,7 @@ Fake-Productivity-Detector/
 │   └── styles/
 │       ├── index.css                     # Global styles
 │       ├── tailwind.css                  # Tailwind imports
-│       ├── theme.css                     # Theme variables
+│       ├── theme.css                     # Theme variables (CSS custom props)
 │       └── fonts.css                     # Font definitions
 │
 ├── backend/
@@ -396,59 +520,78 @@ Fake-Productivity-Detector/
 │   ├── run.bat                          # Windows run script
 │   ├── test.csv                         # Sample CSV for testing
 │   │
-│   └── app/
-│       ├── __init__.py
-│       ├── main.py                      # FastAPI app entry, lifespan, health
-│       ├── config.py                    # Settings (env vars, scoring weights)
-│       │
-│       ├── agent/                       # Local behavioral agent module
-│       │   ├── __init__.py
-│       │   ├── capture.py              # Keystroke/mouse/window capture
-│       │   ├── feature_extraction.py   # Aggregate statistical features
-│       │   ├── authenticity_scorer.py  # 0-100 authenticity scoring
-│       │   ├── sync_client.py          # Daily sync to backend
-│       │   └── run_agent.py            # CLI entry point
-│       │
-│       ├── models/
-│       │   ├── __init__.py
-│       │   ├── database.py             # Supabase CRUD operations
-│       │   └── schemas.py              # Pydantic request/response models
-│       │
-│       ├── routes/
-│       │   ├── __init__.py
-│       │   ├── agent.py                # POST /agent/sync, GET /agent/history
-│       │   ├── analysis.py             # POST /analyze, GET /explain
-│       │   ├── csv_upload.py           # POST /upload-csv, GET /template
-│       │   ├── history.py              # GET/DELETE /history/{user_id}
-│       │   └── reports.py              # GET /reports/{user_id}, /weekly
-│       │
-│       ├── services/
-│       │   ├── __init__.py
-│       │   ├── scoring.py              # Rule-based scoring algorithm
-│       │   ├── ml_model.py             # ML classifier (Random Forest etc.)
-│       │   ├── preprocessing.py        # Data cleaning & normalization
-│       │   └── suggestions.py          # Improvement suggestion generator
-│       │
-│       ├── utils/
-│       │   ├── __init__.py
-│       │   └── csv_parser.py           # CSV parsing & validation
-│       │
-│       └── ml/
-│           ├── __init__.py
-│           └── train_model.py          # Model training script
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── main.py                      # FastAPI app entry, lifespan, health
+│   │   ├── config.py                    # Settings (env vars, scoring weights)
+│   │   │
+│   │   ├── agent/                       # Local behavioral agent module
+│   │   │   ├── __init__.py
+│   │   │   ├── capture.py              # Keystroke/mouse/window capture
+│   │   │   ├── feature_extraction.py   # Aggregate statistical features
+│   │   │   ├── authenticity_scorer.py  # 0-100 authenticity scoring
+│   │   │   ├── simulator.py           # Realistic synthetic telemetry (~900 LOC)
+│   │   │   ├── sync_client.py          # Daily sync to backend
+│   │   │   └── run_agent.py            # CLI entry point
+│   │   │
+│   │   ├── models/
+│   │   │   ├── __init__.py
+│   │   │   ├── database.py             # Supabase CRUD operations
+│   │   │   └── schemas.py              # Pydantic request/response models
+│   │   │
+│   │   ├── routes/
+│   │   │   ├── __init__.py
+│   │   │   ├── agent.py                # POST /agent/sync, GET /agent/history,
+│   │   │   │                           #   /scan, /status, /latest, /seed-demo
+│   │   │   ├── analysis.py             # POST /analyze, GET /explain
+│   │   │   ├── csv_upload.py           # POST /upload-csv, GET /template
+│   │   │   ├── history.py              # GET/DELETE /history/{user_id}
+│   │   │   └── reports.py              # GET /reports/{user_id}, /weekly
+│   │   │
+│   │   ├── services/
+│   │   │   ├── __init__.py
+│   │   │   ├── scoring.py              # Rule-based scoring algorithm
+│   │   │   ├── ml_model.py             # ML classifier (Random Forest etc.)
+│   │   │   ├── preprocessing.py        # Data cleaning & normalization
+│   │   │   └── suggestions.py          # Improvement suggestion generator
+│   │   │
+│   │   ├── utils/
+│   │   │   ├── __init__.py
+│   │   │   └── csv_parser.py           # CSV parsing & validation
+│   │   │
+│   │   └── ml/
+│   │       ├── __init__.py
+│   │       ├── train_model.py          # Model training script
+│   │       └── models/
+│   │           └── random_forest_model.joblib  # Pre-trained model (~624 KB)
+│   │
+│   ├── tests/
+│   │   └── test_authenticity_scorer.py  # Authenticity scorer unit tests
+│   │
+│   └── data/
+│       └── agent_fallback.db           # Fallback SQLite DB for agent data
 │
 ├── supabase/
 │   └── migration.sql                   # Full DB schema + RLS + triggers
 │
+├── .github/
+│   └── workflows/
+│       └── train-model.yml             # CI: automated ML model training
+│
 ├── index.html                           # Main HTML entry
 ├── package.json                         # Frontend dependencies & scripts
-├── vite.config.ts                       # Vite configuration
+├── vite.config.ts                       # Vite configuration (w/ API proxy)
 ├── tsconfig.json                        # TypeScript configuration
 ├── postcss.config.mjs                   # PostCSS / Tailwind config
 ├── Dockerfile                           # Backend Docker image
 ├── vercel.json                          # Vercel monorepo deployment config
 ├── .env.example                         # Frontend env template
 ├── .gitignore
+│
+├── check_agent_status.py                # Utility: check agent process & DB
+├── check_agent_run.py                   # Utility: verify agent execution
+├── check_agent_db.py                    # Utility: inspect agent database
+│
 ├── AGENT_SETUP.md                       # Local behavioral agent setup guide
 ├── ATTRIBUTIONS.md                      # Third-party attributions
 ├── AUTH_SETUP.md                        # Detailed auth setup guide
@@ -462,28 +605,58 @@ Fake-Productivity-Detector/
 
 ### Base URL: `http://localhost:8000/api/v1`
 
+#### Analysis
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/analyze` | Analyze single entry & save to DB |
+| `POST` | `/analyze/quick` | Quick score without saving |
+| `GET` | `/analyze/explain` | Explain scoring formula |
+
+#### CSV Upload
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/upload-csv` | Upload & process CSV batch |
+| `GET` | `/upload-csv/template` | Download CSV template |
+| `POST` | `/upload-csv/validate` | Validate CSV structure |
+
+#### History
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/history/{user_id}` | Get user analysis history |
+| `DELETE` | `/history/{user_id}` | Delete user history |
+| `GET` | `/history/{user_id}/stats` | Get history statistics |
+| `GET` | `/history/{user_id}/trend` | Get history trend data |
+
+#### Reports
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/reports/{user_id}` | Get comprehensive report |
+| `GET` | `/reports/{user_id}/weekly` | Get weekly summary |
+| `GET` | `/reports/{user_id}/comparison` | Get comparison data |
+| `GET` | `/reports/{user_id}/export/csv` | Export reports as CSV |
+
+#### Agent (Behavioral Authenticity)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/agent/sync` | Sync daily agent authenticity score |
+| `GET` | `/agent/history/{user_id}` | Get agent authenticity history |
+| `GET` | `/agent/scan/{user_id}` | Run fresh scan (real data → simulator fallback) |
+| `GET` | `/agent/status/{user_id}` | Get live agent status & telemetry |
+| `GET` | `/agent/latest/{user_id}` | Get latest agent authenticity score |
+| `POST` | `/agent/seed-demo?user_id=` | Seed 14 days of realistic demo data |
+
+#### Health & Info
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/` | Root — welcome message |
 | `GET` | `/health` | Health check |
 | `GET` | `/info` | API information (version, features, scoring) |
-| `POST` | `/analyze` | Analyze single entry & save to DB |
-| `POST` | `/analyze/quick` | Quick score without saving |
-| `GET` | `/analyze/explain` | Explain scoring formula |
-| `POST` | `/upload-csv` | Upload & process CSV batch |
-| `GET` | `/upload-csv/template` | Download CSV template |
-| `POST` | `/upload-csv/validate` | Validate CSV structure |
-| `GET` | `/history/{user_id}` | Get user analysis history |
-| `DELETE` | `/history/{user_id}` | Delete user history |
-| `GET` | `/history/{user_id}/stats` | Get history statistics |
-| `GET` | `/history/{user_id}/trend` | Get history trend data |
-| `GET` | `/reports/{user_id}` | Get comprehensive report |
-| `GET` | `/reports/{user_id}/weekly` | Get weekly summary |
-| `GET` | `/reports/{user_id}/comparison` | Get comparison data |
-| `GET` | `/reports/{user_id}/export/csv` | Export reports as CSV |
-| `POST` | `/agent/sync` | Sync daily agent authenticity score |
-| `GET` | `/agent/history/{user_id}` | Get agent authenticity history |
-| `GET` | `/agent/latest/{user_id}` | Get latest agent authenticity score |
 
 ### POST /analyze — Request
 
@@ -530,6 +703,24 @@ Fake-Productivity-Detector/
 }
 ```
 
+### POST /agent/sync — Request
+
+```json
+{
+  "user_id": "uuid",
+  "event_date": "2024-01-15",
+  "authenticity_score": 82.5,
+  "summary_stats": {
+    "avg_typing_speed": 145.2,
+    "mouse_velocity_mean": 420.8,
+    "top_window_categories": [
+      {"category": "Code/IDE", "seconds": 14400},
+      {"category": "Browser", "seconds": 3600}
+    ]
+  }
+}
+```
+
 > **Interactive API docs:** http://localhost:8000/docs (Swagger UI) | http://localhost:8000/redoc (ReDoc)
 
 ---
@@ -551,9 +742,31 @@ CREATE TABLE public.users (
 );
 ```
 
+### Table: `public.productivity_analysis`
+
+Stores every productivity analysis from the backend (used by `TableNames.PRODUCTIVITY_ANALYSIS`).
+
+```sql
+CREATE TABLE public.productivity_analysis (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id             TEXT NOT NULL,
+  user_name           TEXT,
+  task_hours          FLOAT NOT NULL DEFAULT 0,
+  idle_hours          FLOAT NOT NULL DEFAULT 0,
+  social_media_usage  FLOAT NOT NULL DEFAULT 0,
+  break_frequency     INTEGER NOT NULL DEFAULT 0,
+  tasks_completed     INTEGER NOT NULL DEFAULT 0,
+  productivity_score  FLOAT NOT NULL DEFAULT 0,
+  category_rule_based TEXT,
+  category_ml         TEXT,
+  suggestions         JSONB DEFAULT '[]'::jsonb,
+  created_at          TIMESTAMPTZ DEFAULT now()
+);
+```
+
 ### Table: `public.productivity_records`
 
-Stores every productivity analysis linked to a user.
+Stores productivity records linked to authenticated users.
 
 ```sql
 CREATE TABLE public.productivity_records (
@@ -593,6 +806,7 @@ CREATE TABLE public.agent_authenticity_records (
 - **Row-Level Security (RLS)** enabled on all tables
 - Users can only **SELECT**, **INSERT**, **UPDATE** (users), and **DELETE** their own records
 - A database trigger (`handle_new_user`) automatically creates a profile row when a user signs up
+- `productivity_analysis` uses `auth.uid()::text = user_id` for RLS (text-based user ID)
 
 > **Full migration SQL:** [`supabase/migration.sql`](supabase/migration.sql)
 
@@ -667,12 +881,31 @@ font-family: Inter, SF Pro, Segoe UI, system-ui, sans-serif;
 
 ---
 
+## 🛠️ Utility Scripts
+
+Root-level scripts for debugging and monitoring the agent system:
+
+| Script | Purpose |
+|--------|---------|
+| `check_agent_status.py` | Checks running agent processes, backend health, local SQLite DB stats, and agent config |
+| `check_agent_run.py` | Verifies agent execution and captures |
+| `check_agent_db.py` | Inspects the local agent events database |
+
+```bash
+# Example: Check if agent and backend are running
+python check_agent_status.py
+```
+
+---
+
 ## 🔮 Future Enhancements
 
 ### Planned Features
 - [x] Real Google OAuth integration (Supabase Auth)
 - [x] Machine Learning classification (Random Forest)
 - [x] Local Behavioral Agent (passive authenticity scoring)
+- [x] Agent Simulator (realistic synthetic telemetry)
+- [x] GitHub Actions CI/CD (automated model training)
 - [ ] PDF report generation
 - [ ] Email notifications & summaries
 - [ ] Dark mode toggle
@@ -691,6 +924,8 @@ font-family: Inter, SF Pro, Segoe UI, system-ui, sans-serif;
 - Email confirmation required for email sign-up (Supabase default)
 - ML model auto-training runs on backend startup (adds ~5–10s to first boot)
 - Agent requires `pynput` and platform-specific window title libraries
+- `VITE_API_URL` in `.env` should be **empty** in production (Vercel rewrites handle routing); setting it to `http://localhost:8000` will break deployed builds
+- Agent simulator generates fresh data on every scan — scores may vary slightly between refreshes
 
 ---
 
@@ -755,6 +990,7 @@ Academic project demonstrating Data Science & Full-Stack Web Development.
 - **Supabase** — For the excellent backend infrastructure (Auth + DB)
 - **Recharts** — For the composable charting library
 - **Motion** — For the powerful animation primitives
+- **Scikit-learn** — For the ML classification toolkit
 - **Vercel** — For inspiration on modern UI/UX patterns
 
 ---
@@ -766,7 +1002,7 @@ Academic project demonstrating Data Science & Full-Stack Web Development.
 | [AGENT_SETUP.md](AGENT_SETUP.md) | Local behavioral agent setup & privacy guide |
 | [AUTH_SETUP.md](AUTH_SETUP.md) | Detailed Supabase authentication setup guide |
 | [CSV_FORMAT_GUIDE.md](CSV_FORMAT_GUIDE.md) | CSV structure, columns, and examples |
-| [ATTRIBRIBUTIONS.md](ATTRIBUTIONS.md) | Third-party attributions and licenses |
+| [ATTRIBUTIONS.md](ATTRIBUTIONS.md) | Third-party attributions and licenses |
 | [backend/README.md](backend/README.md) | Backend-specific documentation |
 
 ---

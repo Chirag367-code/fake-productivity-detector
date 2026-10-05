@@ -118,11 +118,11 @@ DAILY_PROFILES = {
             ("Communication", 0.08), ("Word/Office", 0.05), ("Email", 0.04),
             ("Entertainment", 0.02), ("Design", 0.01),
         ],
-        "typing_speed_range": (80, 220),      # Fast, consistent typist
-        "typing_variance_range": (35, 80),     # Low variance — focused
-        "pause_probability": 0.10,             # Few pauses — in the zone
-        "idle_gap_probability": 0.03,          # Rarely idle
-        "window_dwell_range": (10, 45),        # Demo: Fast switching (10-45s)
+        "typing_speed_range": (140, 220),      # Fast, consistent typist
+        "typing_variance_range": (35, 80),     
+        "pause_probability": 0.10,             
+        "idle_gap_probability": 0.03,          
+        "window_dwell_range": (10, 45),        
     },
     "balanced_worker": {
         "description": "Normal productive day with some breaks",
@@ -131,11 +131,11 @@ DAILY_PROFILES = {
             ("Terminal/CLI", 0.10), ("Word/Office", 0.10), ("Email", 0.06),
             ("Entertainment", 0.05), ("Design", 0.02),
         ],
-        "typing_speed_range": (120, 300),      # Average speed
-        "typing_variance_range": (50, 120),    # Moderate variance
-        "pause_probability": 0.14,             # Natural pauses
-        "idle_gap_probability": 0.06,          # Occasional breaks
-        "window_dwell_range": (5, 30),         # Demo: Fast switching (5-30s)
+        "typing_speed_range": (170, 300),      # Average speed (approx 50-70 WPM)
+        "typing_variance_range": (50, 120),    
+        "pause_probability": 0.14,             
+        "idle_gap_probability": 0.06,          
+        "window_dwell_range": (5, 30),         
     },
     "meeting_heavy": {
         "description": "Lots of meetings and communication",
@@ -144,11 +144,11 @@ DAILY_PROFILES = {
             ("Email", 0.10), ("Word/Office", 0.08), ("Terminal/CLI", 0.05),
             ("Entertainment", 0.03), ("Design", 0.01),
         ],
-        "typing_speed_range": (150, 350),      # Slower — typing messages
-        "typing_variance_range": (60, 140),    # Higher variance
-        "pause_probability": 0.18,             # More pauses (listening)
-        "idle_gap_probability": 0.08,          # More idle (in meetings)
-        "window_dwell_range": (5, 20),         # Demo: Fast switching (5-20s)
+        "typing_speed_range": (200, 350),      # Slower — typing messages
+        "typing_variance_range": (60, 140),    
+        "pause_probability": 0.18,             
+        "idle_gap_probability": 0.08,          
+        "window_dwell_range": (5, 20),         
     },
     "distracted_day": {
         "description": "Low productivity, lots of entertainment",
@@ -157,11 +157,11 @@ DAILY_PROFILES = {
             ("Code/IDE", 0.10), ("Email", 0.05), ("Word/Office", 0.05),
             ("Terminal/CLI", 0.03), ("Design", 0.02),
         ],
-        "typing_speed_range": (200, 500),      # Slow, inconsistent
-        "typing_variance_range": (80, 200),    # High variance
-        "pause_probability": 0.25,             # Lots of pauses
-        "idle_gap_probability": 0.12,          # Frequently idle
-        "window_dwell_range": (2, 15),         # Demo: Fast switching (2-15s)
+        "typing_speed_range": (250, 500),      # Slow, inconsistent
+        "typing_variance_range": (80, 200),    
+        "pause_probability": 0.25,             
+        "idle_gap_probability": 0.12,          
+        "window_dwell_range": (2, 15),         
     },
     "research_day": {
         "description": "Lots of reading and research",
@@ -170,11 +170,11 @@ DAILY_PROFILES = {
             ("Communication", 0.10), ("Terminal/CLI", 0.05), ("Email", 0.05),
             ("Entertainment", 0.03), ("Design", 0.02),
         ],
-        "typing_speed_range": (130, 280),
+        "typing_speed_range": (180, 280),
         "typing_variance_range": (55, 110),
         "pause_probability": 0.16,
         "idle_gap_probability": 0.05,
-        "window_dwell_range": (15, 60),        # Demo: Fast switching (15-60s)
+        "window_dwell_range": (15, 60),        
     },
 }
 
@@ -654,27 +654,38 @@ def extract_features_from_events(
     total_keystrokes = len(key_intervals)
 
     if key_intervals:
-        # Separate true typing intervals from pauses (> 2s) so the average
-        # typing speed reflects active typing only (same logic as the real
-        # feature_extraction module).
         typing_intervals = [x for x in key_intervals if x <= 2000]
         num_pauses = sum(1 for x in key_intervals if x > 2000)
         pause_ratio = num_pauses / len(key_intervals)
 
-        if typing_intervals:
+        if len(typing_intervals) >= 50:
             avg_typing_speed = sum(typing_intervals) / len(typing_intervals)
             variance = (
                 sum((x - avg_typing_speed) ** 2 for x in typing_intervals)
                 / len(typing_intervals)
             )
             typing_rhythm_variance = math.sqrt(variance)
+            
+            # Simulated realistic biometric CVs
+            flight_cv = random.uniform(0.5, 0.9) # Human range
+            dwell_cv = random.uniform(0.2, 0.6)  # Human range
+            injected_ratio = 0.0
+            robotic_interval_ratio = 0.0
         else:
-            avg_typing_speed = 0.0
-            typing_rhythm_variance = 0.0
+            avg_typing_speed = None
+            typing_rhythm_variance = None
+            flight_cv = None
+            dwell_cv = None
+            injected_ratio = None
+            robotic_interval_ratio = None
     else:
-        avg_typing_speed = 0.0
-        typing_rhythm_variance = 0.0
+        avg_typing_speed = None
+        typing_rhythm_variance = None
         pause_ratio = 0.0
+        flight_cv = None
+        dwell_cv = None
+        injected_ratio = None
+        robotic_interval_ratio = None
 
     # ---- Mouse features ----
     mouse_events = [e for e in day_events if e["type"] == "mouse"]
@@ -759,9 +770,13 @@ def extract_features_from_events(
     total_active_seconds = sum(c["seconds"] for c in window_categories)
 
     return {
-        "avg_typing_speed": round(avg_typing_speed, 2),
-        "typing_rhythm_variance": round(typing_rhythm_variance, 2),
+        "avg_typing_speed": round(avg_typing_speed, 2) if avg_typing_speed else None,
+        "typing_rhythm_variance": round(typing_rhythm_variance, 2) if typing_rhythm_variance else None,
         "pause_ratio": round(pause_ratio, 4),
+        "flight_cv": round(flight_cv, 4) if flight_cv else None,
+        "dwell_cv": round(dwell_cv, 4) if dwell_cv else None,
+        "injected_ratio": injected_ratio if injected_ratio is not None else 0.0,
+        "robotic_interval_ratio": robotic_interval_ratio if robotic_interval_ratio is not None else 0.0,
         "mouse_velocity_mean": round(mouse_velocity_mean, 2),
         "mouse_velocity_std": round(mouse_velocity_std, 2),
         "mouse_direction_change_freq": round(dir_change_freq, 2),

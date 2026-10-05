@@ -3,16 +3,6 @@ Feature extraction module.
 
 Converts a day's buffered raw events (from the local SQLite store) into
 aggregate statistical features used by the authenticity scorer.
-
-Extracted features:
-  - avg_typing_speed: mean inter-key interval (ms) — lower = faster typing
-  - typing_rhythm_variance: std dev of inter-key intervals
-  - pause_ratio: fraction of gaps > 2 seconds (idle pauses)
-  - mouse_velocity_mean: mean mouse movement speed (px/s)
-  - mouse_velocity_std: std dev of mouse velocity
-  - mouse_direction_change_freq: how often direction changes per minute
-  - active_window_categories: breakdown of time spent per window category
-  - total_events: total number of captured events for the day
 """
 
 import logging
@@ -28,9 +18,6 @@ from .capture import DB_PATH, _get_connection
 
 logger = logging.getLogger(__name__)
 
-# ------------------------------------------------------------------
-# Window category keyword matching
-# ------------------------------------------------------------------
 WINDOW_CATEGORIES: Dict[str, List[str]] = {
     "Code/IDE": ["visual studio", "vscode", "code", "intellij", "pycharm", "sublime", "atom", "vim", "emacs", "xcode", "android studio", "eclipse", "netbeans"],
     "Word/Office": ["word", "excel", "powerpoint", "outlook", "office", "onenote", "notion", "docs", "sheets", "slides", "libreoffice", "openoffice"],
@@ -45,50 +32,19 @@ WINDOW_CATEGORIES: Dict[str, List[str]] = {
 
 DEFAULT_CATEGORY = "Other"
 
-
 def _categorize_window(title: str) -> str:
-    """Match a window title to a category using keyword heuristics."""
     lower = title.lower()
     for category, keywords in WINDOW_CATEGORIES.items():
         if any(kw in lower for kw in keywords):
             return category
     return DEFAULT_CATEGORY
 
-
-# ------------------------------------------------------------------
-# Feature extraction
-# ------------------------------------------------------------------
 def _get_day_range(target_date: date) -> Tuple[float, float]:
-    """Get (start_ts, end_ts) for a given date in local time."""
     start_dt = datetime.combine(target_date, datetime.min.time())
     end_dt = datetime.combine(target_date, datetime.max.time())
-    # Convert to epoch seconds (naive — assumes local timezone)
-    start_ts = start_dt.timestamp()
-    end_ts = end_dt.timestamp()
-    return start_ts, end_ts
-
+    return start_dt.timestamp(), end_dt.timestamp()
 
 def extract_features(target_date: Optional[date] = None) -> Dict[str, Any]:
-    """
-    Extract aggregate features from raw events for a given day.
-
-    Args:
-        target_date: The date to extract features for. Defaults to today.
-
-    Returns:
-        Dict with keys:
-          - avg_typing_speed (float): mean inter-key interval in ms
-          - typing_rhythm_variance (float): std dev of inter-key intervals
-          - pause_ratio (float): fraction of gaps > 2s
-          - mouse_velocity_mean (float): mean mouse speed (px/s)
-          - mouse_velocity_std (float): std dev of mouse speed
-          - mouse_direction_change_freq (float): direction changes per minute
-          - active_window_categories (List[Dict]): [{category, seconds}, ...]
-          - total_keystrokes (int)
-          - total_mouse_events (int)
-          - total_window_events (int)
-          - total_active_seconds (float): estimated active time
-    """
     if target_date is None:
         target_date = date.today()
 
@@ -99,41 +55,77 @@ def extract_features(target_date: Optional[date] = None) -> Dict[str, Any]:
     try:
         # ---- Keystroke features ----
         rows = conn.execute(
-            "SELECT inter_key_ms FROM keystroke_events WHERE timestamp >= ? AND timestamp <= ?",
+            """
+            SELECT inter_key_ms, 
+                   IFNULL(is_modifier, 0) as is_mod,
+                   IFNULL(dwell_ms, 0) as dwell,
+                   IFNULL(flight_ms, 0) as flight,
+                   IFNULL(is_injected, 0) as injected
+            FROM keystroke_events 
+            WHERE timestamp >= ? AND timestamp <= ?
+            """,
             (start_ts, end_ts),
         ).fetchall()
 
-        intervals = [r[0] for r in rows]
-        total_keystrokes = len(intervals)
-
-        if intervals:
-            # Separate true typing intervals from pauses (> 2s) so the
-            # average typing speed reflects active typing only. Pauses are
-            # counted separately in pause_ratio — otherwise the same pause
-            # would be punished twice in the authenticity score.
-            typing_intervals = [x for x in intervals if x <= 2000]
-            num_pauses = sum(1 for x in intervals if x > 2000)
-            pause_ratio = num_pauses / len(intervals)
-
-            if typing_intervals:
-                avg_typing_speed = sum(typing_intervals) / len(typing_intervals)
-                variance = (
-                    sum((x - avg_typing_speed) ** 2 for x in typing_intervals)
-                    / len(typing_intervals)
-                )
-                typing_rhythm_variance = math.sqrt(variance)
-            else:
-                avg_typing_speed = 0.0
-                typing_rhythm_variance = 0.0
-        else:
-            avg_typing_speed = 0.0
-            typing_rhythm_variance = 0.0
-            pause_ratio = 0.0
-
-        features["avg_typing_speed"] = round(avg_typing_speed, 2)
-        features["typing_rhythm_variance"] = round(typing_rhythm_variance, 2)
-        features["pause_ratio"] = round(pause_ratio, 4)
+        total_keystrokes = len(rows)
+        
+        # Calculate OS-level injected ratio across ALL keystrokes
+        injected_count = sum(1 for r in rows if r[4] == 1)
+        injected_ratio = injected_count / total_keystrokes if total_keystrokes > 0 else 0.0
+        
         features["total_keystrokes"] = total_keystrokes
+        features["injected_ratio"] = round(injected_ratio, 4)
+
+        # Filter out modifiers and injected keys for organic typing WPM statistics
+        typing_events = [r for r in rows if r[1] == 0 and r[4] == 0]
+        intervals = [r[0] for r in typing_events]
+        
+        # Active typing intervals cap at 2000ms (2s)
+        typing_intervals = [x for x in intervals if 0 < x <= 2000]
+        # Pauses are gaps > 2s
+        num_pauses = sum(1 for x in intervals if x > 2000)
+        pause_ratio = num_pauses / len(intervals) if intervals else 0.0
+        features["pause_ratio"] = round(pause_ratio, 4)
+        
+        # Guard: Minimum 50 organic typing events for reliable statistical distributions
+        if len(typing_intervals) >= 50:
+            # Basic Speed & Rhythm
+            avg_typing_speed = sum(typing_intervals) / len(typing_intervals)
+            variance = sum((x - avg_typing_speed) ** 2 for x in typing_intervals) / len(typing_intervals)
+            typing_rhythm_variance = math.sqrt(variance)
+            
+            # Secondary robotic interval heuristic (sub-5ms) 
+            robotic_count = sum(1 for x in typing_intervals if x < 5)
+            robotic_interval_ratio = robotic_count / len(typing_intervals)
+            
+            # Flight Coefficient of Variation (exclude long pauses)
+            flights = [r[3] for r in typing_events if 0 < r[3] <= 2000]
+            if len(flights) > 1:
+                mean_flight = sum(flights) / len(flights)
+                flight_cv = math.sqrt(sum((x - mean_flight)**2 for x in flights) / len(flights)) / mean_flight if mean_flight > 0 else 0.0
+            else:
+                flight_cv = 0.0
+                
+            # Dwell Coefficient of Variation
+            dwells = [r[2] for r in typing_events if 0 < r[2] <= 500] # Ignore >500ms dwells as held keys
+            if len(dwells) > 1:
+                mean_dwell = sum(dwells) / len(dwells)
+                dwell_cv = math.sqrt(sum((x - mean_dwell)**2 for x in dwells) / len(dwells)) / mean_dwell if mean_dwell > 0 else 0.0
+            else:
+                dwell_cv = 0.0
+                
+            features["avg_typing_speed"] = round(avg_typing_speed, 2)
+            features["typing_rhythm_variance"] = round(typing_rhythm_variance, 2)
+            features["robotic_interval_ratio"] = round(robotic_interval_ratio, 4)
+            features["flight_cv"] = round(flight_cv, 4)
+            features["dwell_cv"] = round(dwell_cv, 4)
+        else:
+            # Insufficient data
+            features["avg_typing_speed"] = None
+            features["typing_rhythm_variance"] = None
+            features["robotic_interval_ratio"] = None
+            features["flight_cv"] = None
+            features["dwell_cv"] = None
 
         # ---- Mouse features ----
         rows = conn.execute(
@@ -156,19 +148,13 @@ def extract_features(target_date: Optional[date] = None) -> Dict[str, Any]:
             dy = y2 - y1
             dist = math.sqrt(dx * dx + dy * dy)
             if dist == 0:
-                continue  # no movement — not a velocity sample
-            vel = dist / dt
-            # High-frequency mice emit events only 1-2ms apart, which can
-            # produce absurd velocity readings (10,000+ px/s) that are not
-            # representative of human input. Clamp to a realistic ceiling.
-            vel = min(vel, 3000.0)
+                continue
+            vel = min(dist / dt, 3000.0)
             velocities.append(vel)
 
-            # Direction change detection
             angle = math.atan2(dy, dx)
             if prev_angle is not None:
-                diff = abs(angle - prev_angle)
-                if diff > math.radians(45):  # > 45° = direction change
+                if abs(angle - prev_angle) > math.radians(45):
                     direction_changes += 1
             prev_angle = angle
 
@@ -181,7 +167,6 @@ def extract_features(target_date: Optional[date] = None) -> Dict[str, Any]:
             mouse_velocity_mean = 0.0
             mouse_velocity_std = 0.0
 
-        # Direction changes per minute
         if len(rows) >= 2:
             time_span_min = (rows[-1][0] - rows[0][0]) / 60.0
             dir_change_freq = direction_changes / time_span_min if time_span_min > 0 else 0.0
@@ -208,22 +193,18 @@ def extract_features(target_date: Optional[date] = None) -> Dict[str, Any]:
             cat = _categorize_window(title)
             if prev_ts is not None and prev_cat is not None:
                 duration = ts - prev_ts
-                if duration > 0 and duration < 3600:  # cap at 1 hour
+                if 0 < duration < 3600:
                     category_seconds[prev_cat] = category_seconds.get(prev_cat, 0) + duration
             prev_ts = ts
             prev_cat = cat
 
-        # Add the time spent in the current window since the last switch so
-        # total_active_seconds reflects the present instead of stopping at
-        # the most recent window event.
         if prev_ts is not None and prev_cat is not None:
             end_boundary = min(end_ts, time.time())
             if end_boundary > prev_ts:
                 duration = end_boundary - prev_ts
-                if duration > 0 and duration < 3600:
+                if 0 < duration < 3600:
                     category_seconds[prev_cat] = category_seconds.get(prev_cat, 0) + duration
 
-        # Build sorted category list
         window_categories = [
             {"category": cat, "seconds": round(secs, 1)}
             for cat, secs in sorted(category_seconds.items(), key=lambda x: -x[1])
@@ -231,22 +212,14 @@ def extract_features(target_date: Optional[date] = None) -> Dict[str, Any]:
 
         features["active_window_categories"] = window_categories
         features["total_window_events"] = total_window_events
-
-        # ---- Total active seconds ----
-        total_active_seconds = sum(c["seconds"] for c in window_categories)
-        features["total_active_seconds"] = round(total_active_seconds, 1)
+        features["total_active_seconds"] = round(sum(c["seconds"] for c in window_categories), 1)
 
     finally:
         conn.close()
 
     return features
 
-
-# ------------------------------------------------------------------
-# Convenience: get all dates with events
-# ------------------------------------------------------------------
 def get_available_dates() -> List[str]:
-    """Return list of ISO date strings that have events in the store."""
     conn = _get_connection()
     try:
         rows = conn.execute(
@@ -260,8 +233,6 @@ def get_available_dates() -> List[str]:
             )
             """
         ).fetchall()
-        # Convert epoch timestamps to local-timezone dates (matching how
-        # events are captured and how _get_day_range filters them).
         dates = {datetime.fromtimestamp(r[0]).date().isoformat() for r in rows}
         return sorted(dates, reverse=True)
     finally:
