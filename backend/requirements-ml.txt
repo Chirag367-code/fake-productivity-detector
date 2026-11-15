@@ -1,0 +1,10 @@
+# Full Data Science & ML Dependencies (for local model training and testing)
+# Install via: pip install -r backend/requirements-ml.txt
+
+-r requirements.txt
+pandas>=2.2.3
+numpy>=2.1.0
+scikit-learn>=1.6.0
+joblib>=1.4.0
+uvicorn[standard]>=0.32.0
+

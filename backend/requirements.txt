@@ -1,9 +1,9 @@
 # Fake Productivity Detector - Backend Dependencies
-# Compatible with Python 3.12+
+# Lean bundle for serverless and core production runtime
+# For full ML training dependencies, see backend/requirements-ml.txt
 
 # Web Framework
 fastapi>=0.115.0,<1.0
-uvicorn[standard]>=0.32.0
 python-multipart>=0.0.18
 
 # Data Validation
@@ -13,17 +13,8 @@ pydantic-settings>=2.7.0
 # Database
 supabase>=2.13.0
 
-# Data Processing
-pandas>=2.2.3
-numpy>=2.1.0
-
-# Machine Learning
-scikit-learn>=1.6.0
-joblib>=1.4.0
-
 # HTTP Client
 httpx>=0.27.0
-aiohttp>=3.11.0
 
 # Environment
 python-dotenv>=1.0.1
