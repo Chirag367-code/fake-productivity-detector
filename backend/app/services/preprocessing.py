@@ -5,10 +5,15 @@ This module handles data cleaning, validation, and transformation
 for the Fake Productivity Detector ML pipeline.
 """
 
+from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional, Tuple
-import numpy as np
-import pandas as pd
+try:
+    import numpy as np
+    import pandas as pd
+except ImportError:
+    np = None
+    pd = None
 try:
     from sklearn.preprocessing import StandardScaler, LabelEncoder
     SKLEARN_PREPROCESS_AVAILABLE = True

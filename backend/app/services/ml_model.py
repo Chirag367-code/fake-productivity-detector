@@ -5,11 +5,16 @@ This module provides ML classification capabilities for productivity
 category prediction using scikit-learn models.
 """
 
+from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 from pathlib import Path
-import numpy as np
-import pandas as pd
+try:
+    import numpy as np
+    import pandas as pd
+except ImportError:
+    np = None
+    pd = None
 try:
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.linear_model import LogisticRegression

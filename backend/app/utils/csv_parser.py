@@ -3,15 +3,31 @@ CSV parsing utility.
 
 This module handles CSV file parsing and validation
 for batch productivity analysis uploads.
+Works with pandas if installed, or falls back to Python's built-in csv module.
 """
 
+import csv
+import io
 import logging
+import math
+import statistics
 from typing import Any, Dict, List, Optional, Tuple
-from io import StringIO
-import pandas as pd
-import numpy as np
 
 logger = logging.getLogger(__name__)
+
+
+class CSVData:
+    """Lightweight tabular container when pandas is not installed."""
+    def __init__(self, rows: List[Dict[str, Any]], columns: List[str]):
+        self.rows = rows
+        self.columns = columns
+
+    def __len__(self) -> int:
+        return len(self.rows)
+
+    @property
+    def empty(self) -> bool:
+        return len(self.rows) == 0
 
 
 class CSVParser:
@@ -43,52 +59,117 @@ class CSVParser:
         self,
         content: str,
         delimiter: str = ','
-    ) -> Tuple[Optional[pd.DataFrame], List[str]]:
+    ) -> Tuple[Optional[Any], List[str]]:
         """
-        Parse CSV content string into DataFrame.
+        Parse CSV content string into a tabular container.
         
         Args:
             content: CSV file content as string
             delimiter: Column delimiter
             
         Returns:
-            Tuple of (DataFrame or None, list of errors)
+            Tuple of (Data container or None, list of errors)
         """
         self.validation_errors = []
         
         try:
-            # Read CSV content
-            df = pd.read_csv(
-                StringIO(content),
-                delimiter=delimiter,
-                encoding='utf-8'
-            )
-            
-            if df.empty:
+            # Check empty content
+            if not content or not content.strip():
                 self.validation_errors.append("CSV file is empty")
                 return None, self.validation_errors
+
+            # Try parsing with standard csv module
+            f = io.StringIO(content.strip())
+            reader = csv.reader(f, delimiter=delimiter)
             
-            # Standardize column names
-            df = self._standardize_columns(df)
-            
-            # Validate required columns
-            if not self._validate_columns(df):
+            raw_headers = next(reader, None)
+            if not raw_headers:
+                self.validation_errors.append("CSV file is empty")
                 return None, self.validation_errors
-            
-            # Clean and validate data
-            df = self._clean_data(df)
-            
-            logger.info(f"Successfully parsed CSV: {len(df)} rows")
-            return df, []
-            
-        except pd.errors.EmptyDataError:
-            self.validation_errors.append("CSV file is empty")
-        except pd.errors.ParserError as e:
-            self.validation_errors.append(f"CSV parsing error: {str(e)}")
+
+            # Clean and map headers
+            clean_headers = [h.lower().strip().replace(' ', '_') for h in raw_headers]
+            mapped_headers: Dict[int, str] = {}
+            self.column_mapping = {}
+
+            for idx, h in enumerate(clean_headers):
+                for standard_name, variations in self.REQUIRED_COLUMNS.items():
+                    if h in variations or any(var in h for var in variations):
+                        if standard_name not in self.column_mapping.values():
+                            mapped_headers[idx] = standard_name
+                            self.column_mapping[h] = standard_name
+                            break
+
+            # Validate minimum required columns
+            found_standard_cols = set(mapped_headers.values())
+            for col in self.MINIMUM_REQUIRED:
+                if col not in found_standard_cols:
+                    self.validation_errors.append(
+                        f"Missing required column: '{col}'. "
+                        f"Accepted variations: {self.REQUIRED_COLUMNS[col]}"
+                    )
+
+            if self.validation_errors:
+                return None, self.validation_errors
+
+            ranges = {
+                'task_hours': (0.0, 24.0),
+                'idle_hours': (0.0, 24.0),
+                'social_media_usage': (0.0, 24.0),
+                'break_frequency': (0, 50),
+                'tasks_completed': (0, 100)
+            }
+
+            parsed_rows: List[Dict[str, Any]] = []
+            for row in reader:
+                if not row or not any(field.strip() for field in row):
+                    continue  # skip blank lines
+
+                row_dict: Dict[str, Any] = {
+                    'task_hours': 0.0,
+                    'idle_hours': 0.0,
+                    'social_media_usage': 0.0,
+                    'break_frequency': 0,
+                    'tasks_completed': 0
+                }
+
+                for idx, val in enumerate(row):
+                    if idx in mapped_headers:
+                        col_name = mapped_headers[idx]
+                        # Sanitize string against formula injection
+                        clean_val = val.lstrip("=+-@\t\r").strip()
+                        try:
+                            if col_name in ('break_frequency', 'tasks_completed'):
+                                num_val = int(float(clean_val))
+                            else:
+                                num_val = float(clean_val)
+                        except (ValueError, TypeError):
+                            num_val = row_dict[col_name]
+
+                        # Clip to valid range
+                        min_v, max_v = ranges[col_name]
+                        if num_val < min_v:
+                            num_val = min_v
+                        elif num_val > max_v:
+                            num_val = max_v
+
+                        row_dict[col_name] = num_val
+
+                parsed_rows.append(row_dict)
+
+            if not parsed_rows:
+                self.validation_errors.append("CSV file contains no valid data rows")
+                return None, self.validation_errors
+
+            columns = list(ranges.keys())
+            container = CSVData(rows=parsed_rows, columns=columns)
+            logger.info(f"Successfully parsed CSV: {len(container)} rows")
+            return container, []
+
         except UnicodeDecodeError:
             self.validation_errors.append("CSV encoding error. Please use UTF-8 encoding.")
         except Exception as e:
-            self.validation_errors.append(f"Unexpected error: {str(e)}")
+            self.validation_errors.append(f"CSV parsing error: {str(e)}")
             logger.error(f"CSV parsing error: {e}")
         
         return None, self.validation_errors
@@ -97,7 +178,7 @@ class CSVParser:
         self,
         content: bytes,
         delimiter: str = ','
-    ) -> Tuple[Optional[pd.DataFrame], List[str]]:
+    ) -> Tuple[Optional[Any], List[str]]:
         """
         Parse CSV content from bytes.
         
@@ -106,10 +187,9 @@ class CSVParser:
             delimiter: Column delimiter
             
         Returns:
-            Tuple of (DataFrame or None, list of errors)
+            Tuple of (Data container or None, list of errors)
         """
         try:
-            # Try UTF-8 first, then fall back to latin-1
             try:
                 decoded = content.decode('utf-8-sig')
             except UnicodeDecodeError:
@@ -120,141 +200,28 @@ class CSVParser:
         except Exception as e:
             return None, [f"Failed to decode CSV content: {str(e)}"]
     
-    def _standardize_columns(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Standardize column names to match expected format.
-        
-        Args:
-            df: Input DataFrame
-            
-        Returns:
-            DataFrame with standardized column names
-        """
-        # Clean column names
-        df.columns = df.columns.str.lower().str.strip().str.replace(' ', '_')
-        
-        # Map columns to standard names
-        self.column_mapping = {}
-        
-        for standard_name, variations in self.REQUIRED_COLUMNS.items():
-            for col in df.columns:
-                if col in variations or any(var in col for var in variations):
-                    if standard_name not in self.column_mapping:
-                        self.column_mapping[col] = standard_name
-                        break
-        
-        # Rename columns
-        df = df.rename(columns=self.column_mapping)
-        
-        return df
-    
-    def _validate_columns(self, df: pd.DataFrame) -> bool:
-        """
-        Validate that required columns are present.
-        
-        Args:
-            df: DataFrame to validate
-            
-        Returns:
-            True if valid, False otherwise
-        """
-        present_columns = set(df.columns)
-        standard_columns = set(self.REQUIRED_COLUMNS.keys())
-        
-        # Check minimum required
-        for col in self.MINIMUM_REQUIRED:
-            if col not in present_columns:
-                self.validation_errors.append(
-                    f"Missing required column: '{col}'. "
-                    f"Accepted variations: {self.REQUIRED_COLUMNS[col]}"
-                )
-        
-        if self.validation_errors:
-            return False
-        
-        # Warn about missing optional columns
-        missing_optional = standard_columns - set(self.MINIMUM_REQUIRED) - present_columns
-        if missing_optional:
-            logger.warning(f"Missing optional columns (will use defaults): {missing_optional}")
-        
-        return True
-    
-    def _clean_data(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Clean and validate data values.
-        
-        Args:
-            df: DataFrame to clean
-            
-        Returns:
-            Cleaned DataFrame
-        """
-        df = df.copy()
-        
-        # Sanitize string columns against CSV injection
-        for col in df.select_dtypes(include=['object']).columns:
-            df[col] = df[col].apply(
-                lambda x: x.lstrip("=+-@\t\r") if isinstance(x, str) else x
-            )
-        
-        # Define default values for missing columns
-        defaults = {
-            'task_hours': 0.0,
-            'idle_hours': 0.0,
-            'social_media_usage': 0.0,
-            'break_frequency': 0,
-            'tasks_completed': 0
-        }
-        
-        # Add missing columns with defaults
-        for col, default_val in defaults.items():
-            if col not in df.columns:
-                df[col] = default_val
-        
-        # Convert to numeric
-        numeric_columns = list(defaults.keys())
-        for col in numeric_columns:
-            df[col] = pd.to_numeric(df[col], errors='coerce')
-        
-        # Handle NaN values
-        for col, default_val in defaults.items():
-            df[col] = df[col].fillna(default_val)
-        
-        # Clip values to valid ranges
-        ranges = {
-            'task_hours': (0, 24),
-            'idle_hours': (0, 24),
-            'social_media_usage': (0, 24),
-            'break_frequency': (0, 50),
-            'tasks_completed': (0, 100)
-        }
-        
-        for col, (min_val, max_val) in ranges.items():
-            df[col] = df[col].clip(min_val, max_val)
-        
-        # Convert integer columns
-        df['break_frequency'] = df['break_frequency'].astype(int)
-        df['tasks_completed'] = df['tasks_completed'].astype(int)
-        
-        return df
-    
     def get_row_data(
         self,
-        df: pd.DataFrame,
+        df: Any,
         row_index: int
     ) -> Dict[str, Any]:
         """
         Extract data for a specific row.
         
         Args:
-            df: Source DataFrame
+            df: Source tabular container
             row_index: Row index to extract
             
         Returns:
             Dict containing row data
         """
-        row = df.iloc[row_index]
-        
+        if isinstance(df, CSVData):
+            row = df.rows[row_index]
+        elif hasattr(df, 'iloc'):
+            row = df.iloc[row_index]
+        else:
+            row = df[row_index]
+            
         return {
             'task_hours': float(row.get('task_hours', 0)),
             'idle_hours': float(row.get('idle_hours', 0)),
@@ -263,47 +230,64 @@ class CSVParser:
             'tasks_completed': int(row.get('tasks_completed', 0))
         }
     
-    def get_all_rows(self, df: pd.DataFrame) -> List[Dict[str, Any]]:
+    def get_all_rows(self, df: Any) -> List[Dict[str, Any]]:
         """
         Extract all rows as list of dicts.
         
         Args:
-            df: Source DataFrame
+            df: Source tabular container
             
         Returns:
             List of row data dicts
         """
+        if isinstance(df, CSVData):
+            return df.rows
+        if isinstance(df, list):
+            return df
         rows = []
         for i in range(len(df)):
             rows.append(self.get_row_data(df, i))
         return rows
     
-    def get_summary_stats(self, df: pd.DataFrame) -> Dict[str, Any]:
+    def get_summary_stats(self, df: Any) -> Dict[str, Any]:
         """
         Calculate summary statistics for CSV data.
         
         Args:
-            df: DataFrame to summarize
+            df: Tabular container to summarize
             
         Returns:
             Dict of summary statistics
         """
+        rows = self.get_all_rows(df)
         numeric_cols = ['task_hours', 'idle_hours', 'social_media_usage', 
                        'break_frequency', 'tasks_completed']
         
+        columns_found = list(df.columns) if hasattr(df, 'columns') else numeric_cols
+        
         stats = {
-            'total_rows': len(df),
-            'columns_found': list(df.columns),
+            'total_rows': len(rows),
+            'columns_found': columns_found,
             'column_stats': {}
         }
         
         for col in numeric_cols:
-            if col in df.columns:
+            values = [float(r.get(col, 0)) for r in rows if col in r]
+            if values:
+                mean_val = statistics.mean(values)
+                std_val = statistics.stdev(values) if len(values) > 1 else 0.0
                 stats['column_stats'][col] = {
-                    'mean': round(df[col].mean(), 2),
-                    'min': round(df[col].min(), 2),
-                    'max': round(df[col].max(), 2),
-                    'std': round(df[col].std(), 2)
+                    'mean': round(mean_val, 2),
+                    'min': round(min(values), 2),
+                    'max': round(max(values), 2),
+                    'std': round(std_val, 2)
+                }
+            else:
+                stats['column_stats'][col] = {
+                    'mean': 0.0,
+                    'min': 0.0,
+                    'max': 0.0,
+                    'std': 0.0
                 }
         
         return stats
