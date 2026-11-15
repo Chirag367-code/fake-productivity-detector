@@ -32,9 +32,13 @@ _agent_in_memory_store: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
 
 # Persistent SQLite fallback path used when the Supabase table is unavailable.
 # This ensures agent records survive backend restarts (unlike in-memory only).
-_AGENT_FALLBACK_SQLITE_PATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "..", "..", "data", "agent_fallback.db"
-)
+# On Vercel (read-only filesystem), use /tmp so writes don't crash.
+if os.environ.get("VERCEL"):
+    _AGENT_FALLBACK_SQLITE_PATH = "/tmp/agent_fallback.db"
+else:
+    _AGENT_FALLBACK_SQLITE_PATH = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "..", "..", "data", "agent_fallback.db"
+    )
 
 
 class SupabaseClient:

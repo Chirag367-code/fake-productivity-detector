@@ -86,7 +86,9 @@ class Settings(BaseSettings):
     class Config:
         # Load backend/.env relative to *this* file so the correct .env is
         # used regardless of the working directory the server is started from.
-        env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.env')
+        # On Vercel, the .env file may not exist — Pydantic will simply skip it.
+        _env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.env')
+        env_file = _env_path if os.path.isfile(_env_path) else None
         env_file_encoding = "utf-8"
         case_sensitive = False
         # Ignore extra variables (e.g. VITE_* from the frontend .env) so

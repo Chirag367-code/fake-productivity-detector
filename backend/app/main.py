@@ -50,28 +50,33 @@ async def lifespan(app: FastAPI):
     logger.info(f"Supabase URL: {settings.supabase_url}")
     logger.info(f"Debug Mode: {settings.debug}")
     
-    # Check for ML model availability; auto-train if missing
-    model_path = os.path.join(os.path.dirname(__file__), 'ml', 'models', 'random_forest_model.joblib')
-    if os.path.exists(model_path):
-        logger.info(f"ML Model found: {model_path}")
-        try:
-            from app.services.ml_model import MLClassifier
-            clf = MLClassifier(model_type='random_forest', model_path=model_path)
-            info = clf.get_model_info()
-            logger.info(f"Model Info: Type={info['model_type']}, Trained={info['is_trained']}, Accuracy={info['accuracy']}")
-        except Exception as e:
-            logger.warning(f"Could not load model info: {e}")
+    # Check for ML model availability; auto-train if missing.
+    # On Vercel the filesystem is read-only and cold-start time is limited,
+    # so skip ML model loading/training entirely.
+    if os.environ.get("VERCEL"):
+        logger.info("Running on Vercel — skipping ML model loading/training (read-only filesystem)")
     else:
-        logger.warning("No pre-trained ML model found. Auto-training with synthetic data...")
-        try:
-            from app.ml.train_model import generate_synthetic_data, train_and_evaluate
-            model_dir = os.path.join(os.path.dirname(__file__), 'ml', 'models')
-            data = generate_synthetic_data(n_samples=1000)
-            results = train_and_evaluate(data, model_type='random_forest', model_dir=model_dir)
-            logger.info(f"Auto-trained model saved. Accuracy: {results['test_accuracy']:.4f}")
-        except Exception as e:
-            logger.error(f"Auto-training failed (non-critical): {e}")
-            logger.info("The API will still work — ML predictions will use an untrained model.")
+        model_path = os.path.join(os.path.dirname(__file__), 'ml', 'models', 'random_forest_model.joblib')
+        if os.path.exists(model_path):
+            logger.info(f"ML Model found: {model_path}")
+            try:
+                from app.services.ml_model import MLClassifier
+                clf = MLClassifier(model_type='random_forest', model_path=model_path)
+                info = clf.get_model_info()
+                logger.info(f"Model Info: Type={info['model_type']}, Trained={info['is_trained']}, Accuracy={info['accuracy']}")
+            except Exception as e:
+                logger.warning(f"Could not load model info: {e}")
+        else:
+            logger.warning("No pre-trained ML model found. Auto-training with synthetic data...")
+            try:
+                from app.ml.train_model import generate_synthetic_data, train_and_evaluate
+                model_dir = os.path.join(os.path.dirname(__file__), 'ml', 'models')
+                data = generate_synthetic_data(n_samples=1000)
+                results = train_and_evaluate(data, model_type='random_forest', model_dir=model_dir)
+                logger.info(f"Auto-trained model saved. Accuracy: {results['test_accuracy']:.4f}")
+            except Exception as e:
+                logger.error(f"Auto-training failed (non-critical): {e}")
+                logger.info("The API will still work — ML predictions will use an untrained model.")
     
     yield
     
