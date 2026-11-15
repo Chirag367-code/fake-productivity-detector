@@ -9,7 +9,13 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+try:
+    from sklearn.preprocessing import StandardScaler, LabelEncoder
+    SKLEARN_PREPROCESS_AVAILABLE = True
+except ImportError:
+    SKLEARN_PREPROCESS_AVAILABLE = False
+    StandardScaler = None
+    LabelEncoder = None
 from pathlib import Path
 import joblib
 
@@ -45,8 +51,8 @@ class DataPreprocessor:
         Args:
             scaler_path: Path to saved scaler (if loading existing)
         """
-        self.scaler = StandardScaler()
-        self.label_encoder = LabelEncoder()
+        self.scaler = StandardScaler() if StandardScaler else None
+        self.label_encoder = LabelEncoder() if LabelEncoder else None
         self.is_fitted = False
         self.scaler_path = scaler_path or "app/ml/scaler.pkl"
         

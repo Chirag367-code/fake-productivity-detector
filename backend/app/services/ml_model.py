@@ -10,16 +10,23 @@ from typing import Any, Dict, List, Optional, Tuple
 from pathlib import Path
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.metrics import (
-    classification_report,
-    accuracy_score,
-    confusion_matrix,
-    precision_recall_fscore_support
-)
+try:
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.tree import DecisionTreeClassifier
+    from sklearn.model_selection import train_test_split, cross_val_score
+    from sklearn.metrics import (
+        classification_report,
+        accuracy_score,
+        confusion_matrix,
+        precision_recall_fscore_support
+    )
+    SKLEARN_AVAILABLE = True
+except ImportError:
+    SKLEARN_AVAILABLE = False
+    RandomForestClassifier = None
+    LogisticRegression = None
+    DecisionTreeClassifier = None
 import joblib
 
 from ..config import settings, ProductivityCategory
@@ -44,7 +51,7 @@ class MLClassifier:
         'logistic_regression': LogisticRegression,
         'random_forest': RandomForestClassifier,
         'decision_tree': DecisionTreeClassifier
-    }
+    } if SKLEARN_AVAILABLE else {}
     
     CATEGORY_CLASSES = [
         ProductivityCategory.FAKE_PRODUCTIVITY,
@@ -68,6 +75,13 @@ class MLClassifier:
         self.model_path = model_path or settings.ml_model_path
         self.model = None
         self.is_trained = False
+        
+        if not SKLEARN_AVAILABLE:
+            logger.info("scikit-learn is not installed; ML classification disabled.")
+            return
+
+        if self.model_path and Path(self.model_path).exists():
+            self.load_model(self.model_path)
         self.training_accuracy = 0.0
         self.preprocessor = get_preprocessor()
         
