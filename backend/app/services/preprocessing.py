@@ -22,7 +22,10 @@ except ImportError:
     StandardScaler = None
     LabelEncoder = None
 from pathlib import Path
-import joblib
+try:
+    import joblib
+except ImportError:
+    joblib = None
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +74,8 @@ class DataPreprocessor:
         Returns:
             bool: True if scaler was loaded successfully
         """
+        if joblib is None:
+            return False
         try:
             scaler_file = Path(self.scaler_path)
             if scaler_file.exists():
@@ -89,6 +94,9 @@ class DataPreprocessor:
         Args:
             path: Path to save scaler (uses default if not provided)
         """
+        if joblib is None:
+            logger.warning("joblib is not installed, cannot save scaler")
+            return
         save_path = path or self.scaler_path
         Path(save_path).parent.mkdir(parents=True, exist_ok=True)
         joblib.dump(self.scaler, save_path)

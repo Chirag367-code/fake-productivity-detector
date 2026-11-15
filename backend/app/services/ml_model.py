@@ -32,7 +32,11 @@ except ImportError:
     RandomForestClassifier = None
     LogisticRegression = None
     DecisionTreeClassifier = None
-import joblib
+
+try:
+    import joblib
+except ImportError:
+    joblib = None
 
 from ..config import settings, ProductivityCategory
 from .preprocessing import DataPreprocessor, get_preprocessor
@@ -80,14 +84,14 @@ class MLClassifier:
         self.model_path = model_path or settings.ml_model_path
         self.model = None
         self.is_trained = False
+        self.training_accuracy = 0.0
+        self.preprocessor = None
+        self.model_params = {}
         
         if not SKLEARN_AVAILABLE:
             logger.info("scikit-learn is not installed; ML classification disabled.")
             return
 
-        if self.model_path and Path(self.model_path).exists():
-            self.load_model(self.model_path)
-        self.training_accuracy = 0.0
         self.preprocessor = get_preprocessor()
         
         # Model parameters
@@ -119,6 +123,9 @@ class MLClassifier:
         Returns:
             bool: True if model was loaded successfully
         """
+        if joblib is None:
+            logger.info("joblib is not installed; skipping ML model loading.")
+            return False
         try:
             model_file = Path(self.model_path)
             logger.info(f"Attempting to load model from: {model_file.resolve()}")
@@ -377,6 +384,8 @@ class MLClassifier:
         """
         if not self.is_trained or self.model is None:
             raise ValueError("No trained model to save")
+        if joblib is None:
+            raise ValueError("joblib is not installed, cannot save model")
         
         save_path = path or self.model_path
         Path(save_path).parent.mkdir(parents=True, exist_ok=True)
@@ -398,15 +407,22 @@ class MLClassifier:
         Returns:
             Dict with model information
         """
+        features = self.preprocessor.FEATURE_COLUMNS if self.preprocessor else [
+            'task_hours',
+            'idle_hours',
+            'social_media_usage',
+            'break_frequency',
+            'tasks_completed'
+        ]
         info = {
             'model_type': self.model_type,
             'is_trained': self.is_trained,
             'accuracy': self.training_accuracy,
-            'features': self.preprocessor.FEATURE_COLUMNS,
+            'features': features,
             'classes': self.CATEGORY_CLASSES
         }
         
-        if self.is_trained and self.model is not None:
+        if self.is_trained and self.model is not None and self.preprocessor is not None:
             if hasattr(self.model, 'feature_importances_'):
                 importances = self.model.feature_importances_
                 info['feature_importances'] = dict(

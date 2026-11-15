@@ -1,0 +1,8 @@
+backend/venv
+.venv
+venv
+backend/tests
+backend/data
+*.joblib
+*.pkl
+
