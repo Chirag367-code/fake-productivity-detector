@@ -3,7 +3,13 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "build": {
+    "env": {
+      "VERCEL_SUPPORT_LARGE_FUNCTIONS": "1"
+    }
+  },
   "env": {
+    "VERCEL_SUPPORT_LARGE_FUNCTIONS": "1",
     "VITE_SUPABASE_URL": "https://yimronvopzqhapclnbsv.supabase.co",
     "VITE_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpbXJvbnZvcHpxaGFwY2xuYnN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyNjYzMzUsImV4cCI6MjA5OTg0MjMzNX0.REviJYxxWqOESHcvepV4Z10yEkAl7UyvHS8oMS9-zJY",
     "SUPABASE_URL": "https://yimronvopzqhapclnbsv.supabase.co",
@@ -13,7 +19,7 @@
   "functions": {
     "api/index.py": {
       "maxDuration": 30,
-      "includeFiles": "backend/**"
+      "excludeFiles": "{backend/tests,backend/data,tests}/**"
     }
   },
   "rewrites": [

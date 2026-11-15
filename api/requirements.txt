@@ -1,9 +1,8 @@
-# Fake Productivity Detector - Backend Dependencies
-# Compatible with Python 3.12+
+# Fake Productivity Detector - Vercel Serverless Dependencies
+# Cleaned of unnecessary local-only dependencies (uvicorn, aiohttp)
 
 # Web Framework
 fastapi>=0.115.0,<1.0
-uvicorn[standard]>=0.32.0
 python-multipart>=0.0.18
 
 # Data Validation
@@ -23,7 +22,6 @@ joblib>=1.4.0
 
 # HTTP Client
 httpx>=0.27.0
-aiohttp>=3.11.0
 
 # Environment
 python-dotenv>=1.0.1
